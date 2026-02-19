@@ -60,6 +60,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
 
     res.json({ received: true });
   } catch (err) {
+    console.log("error received", err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
 });
