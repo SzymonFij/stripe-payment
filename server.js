@@ -45,9 +45,17 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
 
-    if (event.type === 'payment_intent.succeeded') {
-      console.log('Płatność zakończona sukcesem!');
-      // Tu możesz zapisać klienta do bazy
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        console.log("Payment succeeded:", paymentIntent.id);
+        // Save to database / unlock service, etc.
+        break;
+      case 'payment_intent.payment_failed':
+        console.log("Payment failed:", event.data.object.id);
+        break;
+      default:
+        console.log("Unhandled event:", event.type);
     }
 
     res.json({ received: true });
