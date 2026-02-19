@@ -7,7 +7,7 @@ const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors({
-  origin: process.env.FRONTENT_URL
+  origin: process.env.FRONTEND_URL
 }));
 app.use(express.json());
 
