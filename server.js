@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const Stripe = require('stripe');
+const pool = require('./db');
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -10,7 +11,7 @@ app.use(cors({
   	origin: process.env.FRONTEND_URL
 }));
 
-app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
 	const sig = req.headers['stripe-signature'];
 	let event;
 
@@ -31,7 +32,30 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
 		case 'payment_intent.succeeded':
 			const paymentIntent = event.data.object;
 			console.log("Payment succeeded:", paymentIntent.id);
-			// Save to database / unlock service, etc.
+			
+			const userId = paymentIntent.metadata.userId;
+			try {
+				await pool.query(
+					`INSERT INTO payments
+					(stripe_payment_id, user_id, amount, currency, status)
+					VALUES ($1, $2, $3, $4, $5)`,
+					[
+						paymentIntent.id,
+						userId,
+						paymentIntent.amount,
+						paymentIntent.currency,
+						paymentIntent.status
+					]
+				);
+				await pool.query(
+					`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
+					[userId]
+				);
+				console.log("Payment has been saved");
+			} catch (error) {
+				console.error("DB error:", error);
+			}
+
 			break;
 		case 'payment_intent.payment_failed':
 			console.log("Payment failed:", event.data.object.id);
@@ -44,6 +68,41 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
   
 });
 
+app.get("/init-db", async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    res.send("Table created");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error");
+  }
+});
+app.get("/init-db2", async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+		id SERIAL PRIMARY KEY,
+		stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
+		user_id INTEGER REFERENCES users(id),
+		amount INTEGER NOT NULL,
+		currency VARCHAR(10),
+		status VARCHAR(50),
+		created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    res.send("Table created");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error");
+  }
+});
+
 app.use(express.json());
 
 app.post('/create-payment-intent', async (req, res) => {
@@ -54,6 +113,9 @@ app.post('/create-payment-intent', async (req, res) => {
 			automatic_payment_methods: {
 				enabled: true,
         	},
+			metadata: {
+				userId: "123"
+			}
         });
         res.send({
         	clientSecret: paymentIntent.client_secret,
@@ -62,6 +124,25 @@ app.post('/create-payment-intent', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+app.get("/user/:id/payment-status", async (req, res) => {
+	const userId = req.params.id;
+
+	try {
+		const result = await pool.query(
+			`SELECT payment_status FROM users WHERE id =$1`,
+			[userId]
+		);
+
+		if (result.rows.length === 0) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		res.json({ status: result.rows[0].payment_status });
+	} catch (error) {
+		res.status(500).json({ error: "Database error"});
+	}
+})
 
 app.listen(process.env.PORT, () => {
     console.log(`Serwer działa na porcie ${process.env.PORT}`);
