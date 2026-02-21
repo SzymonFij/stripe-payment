@@ -1,16 +1,83 @@
 require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const cors = require('cors');
 const Stripe = require('stripe');
 const pool = require('./db');
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const JWT_SECRET = process.env.JWT_SECRET || "supertajnehaslo";
+const SALT_ROUNDS = 10; // Rounds to hash password;
 
 app.use(cors({
   	origin: process.env.FRONTEND_URL
 }));
+
+app.post('/auth/register', async (req, res) => {
+	try {
+		const { email, password } = req.body;
+		if (!email || !password) {
+			return res.status(400).json({ error: "Email and password are obligatory"});
+		}
+		
+		//Hashing the password
+		const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+		// Save to database
+		const result = await pool.query(
+			`INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email`,
+			[email, password_hash]
+		);
+		
+		const user = result.rows[0];
+		console.log("USER REGISTERED", user);
+		
+		const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {expiresIn: '7d' });
+		
+		res.json({ user, token });
+	} catch (error) {
+		if (error.code === "23505") { // Unique email
+			return res.status(400).json({ error: "Email is taken"});
+		}
+		console.error(error);
+		res.status(500).json({ error: error.message });
+	}
+})
+
+app.post ('/auth/login', async (req, res) => {
+	try {
+		const {email, password} = req.body;
+		if (!email || !password) {
+			return res.status(400).json({ error: "Email and password are obligatory"});
+		}
+		// Get user from database
+		const result = await pool.query(
+			`SELECT id, email, password_hash FROM users WHERE email=$1`,
+			[email]
+		);
+
+		if (result.rowCount === 0) {
+			return res.status(400).json({ error: "Invalid email or password"});
+		}
+
+		const user = result.rows[0];
+
+		// Password comparison
+		const isValid = await bcrypt.compare(password, user.password_hash);
+		if (!isValid) {
+			return res.status(400).json({ error: "Invalid email or password"});
+		}
+
+		// JWT token
+		const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+		res.json({ user: {id: user.id, email: user.email}, token });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: error.message });
+	}
+})
 
 app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
 	const sig = req.headers['stripe-signature'];
@@ -71,28 +138,29 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
 app.get("/init-db", async (req, res) => {
   try {
-	// await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
-	// await pool.query('DROP TABLE IF EXISTS users CASCADE');
-	// await pool.query('DROP TABLE IF EXISTS payment_links');
-    // await pool.query(`
-	// 	CREATE TABLE IF NOT EXISTS users (
-	// 		id SERIAL PRIMARY KEY,
-	// 		email VARCHAR(255) UNIQUE NOT NULL,
-	// 		payment_status VARCHAR(50),
-	// 		created_at TIMESTAMP DEFAULT NOW()
-	// 	);
-    // `);
-    // await pool.query(`
-	// 	CREATE TABLE IF NOT EXISTS payments (
-	// 		id SERIAL PRIMARY KEY,
-	// 		stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
-	// 		user_id INTEGER REFERENCES users(id),
-	// 		amount INTEGER NOT NULL,
-	// 		currency VARCHAR(10),
-	// 		payment_status VARCHAR(50),
-	// 		created_at TIMESTAMP DEFAULT NOW()
-	// 	);
-    // `);
+	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
+	await pool.query('DROP TABLE IF EXISTS users CASCADE');
+	await pool.query('DROP TABLE IF EXISTS payment_links');
+    await pool.query(`
+		CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			email VARCHAR(255) UNIQUE NOT NULL,
+			password_hash VARCHAR(255) NOT NULL,
+			payment_status VARCHAR(50),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+    `);
+    await pool.query(`
+		CREATE TABLE IF NOT EXISTS payments (
+			id SERIAL PRIMARY KEY,
+			stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
+			user_id INTEGER REFERENCES users(id),
+			amount INTEGER NOT NULL,
+			currency VARCHAR(10),
+			payment_status VARCHAR(50),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+    `);
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
