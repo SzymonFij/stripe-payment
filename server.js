@@ -209,7 +209,7 @@ app.post('/create-payment-intent', async (req, res) => {
 	const amount = 200;
 	const currency = 'pln';
 	// First add user to database, later it should be done on launching the quiz
-	const token = req.params.token;
+	const token = req.query.token;
 	console.log("TOKEN", token, req.params, "body", req.body);
 	// Token verification
 	const tokenResult = await pool.query(
