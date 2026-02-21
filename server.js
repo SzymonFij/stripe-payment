@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const crypto = requires('crypto');
 const cors = require('cors');
 const Stripe = require('stripe');
 const pool = require('./db');
@@ -72,26 +73,36 @@ app.get("/init-db", async (req, res) => {
   try {
 	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
 	await pool.query('DROP TABLE IF EXISTS users CASCADE');
+	await pool.query('DROP TABLE IF EXISTS payment_links');
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-		payment_status VARCHAR(50),
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+		CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			email VARCHAR(255) UNIQUE NOT NULL,
+			payment_status VARCHAR(50),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
     `);
-    res.send("Table created");
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS payments (
-		id SERIAL PRIMARY KEY,
-		stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
-		user_id INTEGER REFERENCES users(id),
-		amount INTEGER NOT NULL,
-		currency VARCHAR(10),
-		payment_status VARCHAR(50),
-		created_at TIMESTAMP DEFAULT NOW()
-      );
+		CREATE TABLE IF NOT EXISTS payments (
+			id SERIAL PRIMARY KEY,
+			stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
+			user_id INTEGER REFERENCES users(id),
+			amount INTEGER NOT NULL,
+			currency VARCHAR(10),
+			payment_status VARCHAR(50),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
     `);
+	await pool.query(`
+		CREATE TABLE payment_links (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER REFERENCES users(id)
+			token VARCHAR(255) UNIQUE NOT NULL
+			expires_at TIMESTAMP NOT NULL,
+			used BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+	`);
     res.send("Table created");
   } catch (err) {
     console.error(err);
@@ -101,21 +112,58 @@ app.get("/init-db", async (req, res) => {
 
 app.use(express.json());
 
+app.post('/sales/generate-payment-link', async (req, res) => {
+	try {
+		const { userId } = req.body; // Consider sending email and checking userId from database.
+
+		if (!userId) {
+			return res.status(400).json({ error: "No userId"});
+		}
+		// Generate random token
+		const token = crypto.randomBytes(32).toString('hex');
+		// Set expiration time for 1 day
+		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		// Save token in database
+		await pool.query(
+			`INSERT INTO payment_links (user_id, token, expires_at) VALUES ($1, $2, $3)`,
+			[userId, token, expiresAt]
+		);
+		// Generate link for frontend
+		const link = `http://localhost:4173/platnosc?token=${token}`;
+		res.json({ link, expiresAt });
+	} catch (error) {
+		console.error(error);
+		res.send(500).json({ error: error.message });
+	}
+})
+
 app.post('/create-payment-intent', async (req, res) => {
-	// First add user to database, later it should be done on launching the quiz
-	const email = req.body.email;
 	const amount = 200;
 	const currency = 'pln';
-	console.log("EMAIL", email, req.body);
-	const result = await pool.query(
-		`INSERT INTO users (email)
-		VALUES ($1)
-		ON CONFLICT (email)
-		DO UPDATE SET email = EXCLUDED.email
-		RETURNING id`,
-		[email]
+	// First add user to database, later it should be done on launching the quiz
+	const { token } = req.body;
+	// Token verification
+	const tokenResult = await pool.query(
+		`SELECT * FROM payment_links WHERE token=$1 AND used=FALSE AND expires_at > NOW()`,
+		[token]
 	);
-	const userId = result.rows[0].id;
+	if (tokenResult.rowCount === 0) {
+		return res.status(400).json({ error: "Link has expired or has been used already "});
+	}
+
+	const linkData = tokenResult.rows[1];
+	const userId = linkData.user_id;
+
+	// TODO: Delete before production. This is temporary user addition.
+	// const result = await pool.query(
+	// 	`INSERT INTO users (email)
+	// 	VALUES ($1)
+	// 	ON CONFLICT (email)
+	// 	DO UPDATE SET email = EXCLUDED.email
+	// 	RETURNING id`,
+	// 	[email]
+	// );
+	// const userId = result.rows[0].id;
 	console.log("User ID", userId);
 
 	// Make payment to stripe 
@@ -136,6 +184,11 @@ app.post('/create-payment-intent', async (req, res) => {
 			`UPDATE users SET payment_status = 'create-payment-intent' WHERE id = $1`,
 			[userId]
 		);
+		// Set token as USED
+		await pool.query(
+			`UPDATE payment_links SET used=TRUE WHERE id=$1`,
+			[linkData.id]
+		);
         res.send({
         	clientSecret: paymentIntent.client_secret,
         });
@@ -143,6 +196,36 @@ app.post('/create-payment-intent', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Renewing the payment link
+app.post('/sales/renew-payment-link', async (req, res) => {
+	try {
+		const { token } = req.body;
+
+		const result = await pool.query(
+			`SELECT * FROM payment_links WHERE token=$1`,
+			[token]
+		);
+		if (result.rowCount === 0) {
+			return res.status(400).json({ error: "No link was found"});
+
+		}
+		const oldLink = result.row[0];
+		const newToken = crypto.randomBytes(32).toString('hex');
+		const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+		await pool.query(
+			`UPDATE payment_links SET token=$1, expires_at=$2, used=FALSE WHERE id=$3`,
+			[newToken, newExpires, oldLink.id]
+		);
+
+		const newLink = `http://localhost:4137/platnosc?tkoen=${newToken}`;
+		res.json({ link: newLink, expiresAt: newExpires });
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ error: error.message });
+	}
+})
 
 app.get("/user/:id/payment-status", async (req, res) => {
 	const userId = req.params.id;
