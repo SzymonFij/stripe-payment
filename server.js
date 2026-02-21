@@ -37,7 +37,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 			try {
 				await pool.query(
 					`INSERT INTO payments
-					(stripe_payment_id, user_id, amount, currency, status)
+					(stripe_payment_id, user_id, amount, currency, payment_status)
 					VALUES ($1, $2, $3, $4, $5)`,
 					[
 						paymentIntent.id,
@@ -133,7 +133,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 		// Send payment status to payments database
 		await pool.query(
-			`UPDATE users SET payment_status = 'create=payment-intent' WHERE id = $1`,
+			`UPDATE users SET payment_status = 'create-payment-intent' WHERE id = $1`,
 			[userId]
 		);
         res.send({
