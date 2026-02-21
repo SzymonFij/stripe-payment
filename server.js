@@ -210,17 +210,20 @@ app.post('/create-payment-intent', async (req, res) => {
 	const currency = 'pln';
 	// First add user to database, later it should be done on launching the quiz
 	const token = req.params.token;
+	console.log("TOKEN", token, req.params, "body", req.body);
 	// Token verification
 	const tokenResult = await pool.query(
 		`SELECT * FROM payment_links WHERE token=$1 AND used=FALSE AND expires_at > NOW()`,
 		[token]
 	);
+	console.log("TOKEN RESULTS", tokenResult);
 	if (tokenResult.rowCount === 0) {
 		return res.status(400).json({ error: "Link has expired or has been used already "});
 	}
 
 	const linkData = tokenResult.rows[1];
 	const userId = linkData.user_id;
+	console.log("link data", linkData, "userID", userID);
 
 	// TODO: Delete before production. This is temporary user addition.
 	// const result = await pool.query(
