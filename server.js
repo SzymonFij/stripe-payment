@@ -221,7 +221,7 @@ app.post('/create-payment-intent', async (req, res) => {
 		return res.status(400).json({ error: "Link has expired or has been used already "});
 	}
 
-	const linkData = tokenResult.rows[1];
+	const linkData = tokenResult.rows[0];
 	const userId = linkData.user_id;
 	console.log("link data", linkData, "userID", userID);
 
