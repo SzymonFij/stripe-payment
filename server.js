@@ -164,8 +164,8 @@ app.get("/init-db", async (req, res) => {
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
-			user_id INTEGER REFERENCES users(id)
-			token VARCHAR(255) UNIQUE NOT NULL
+			user_id INTEGER REFERENCES users(id),
+			token VARCHAR(255) UNIQUE NOT NULL,
 			expires_at TIMESTAMP NOT NULL,
 			used BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT NOW()
