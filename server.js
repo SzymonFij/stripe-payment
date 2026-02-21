@@ -71,28 +71,28 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
 app.get("/init-db", async (req, res) => {
   try {
-	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
-	await pool.query('DROP TABLE IF EXISTS users CASCADE');
-	await pool.query('DROP TABLE IF EXISTS payment_links');
-    await pool.query(`
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			email VARCHAR(255) UNIQUE NOT NULL,
-			payment_status VARCHAR(50),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-    `);
-    await pool.query(`
-		CREATE TABLE IF NOT EXISTS payments (
-			id SERIAL PRIMARY KEY,
-			stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
-			user_id INTEGER REFERENCES users(id),
-			amount INTEGER NOT NULL,
-			currency VARCHAR(10),
-			payment_status VARCHAR(50),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-    `);
+	// await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
+	// await pool.query('DROP TABLE IF EXISTS users CASCADE');
+	// await pool.query('DROP TABLE IF EXISTS payment_links');
+    // await pool.query(`
+	// 	CREATE TABLE IF NOT EXISTS users (
+	// 		id SERIAL PRIMARY KEY,
+	// 		email VARCHAR(255) UNIQUE NOT NULL,
+	// 		payment_status VARCHAR(50),
+	// 		created_at TIMESTAMP DEFAULT NOW()
+	// 	);
+    // `);
+    // await pool.query(`
+	// 	CREATE TABLE IF NOT EXISTS payments (
+	// 		id SERIAL PRIMARY KEY,
+	// 		stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
+	// 		user_id INTEGER REFERENCES users(id),
+	// 		amount INTEGER NOT NULL,
+	// 		currency VARCHAR(10),
+	// 		payment_status VARCHAR(50),
+	// 		created_at TIMESTAMP DEFAULT NOW()
+	// 	);
+    // `);
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
