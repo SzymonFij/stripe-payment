@@ -31,18 +31,26 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 	switch (event.type) {
 		case 'payment_intent.succeeded':
 			const paymentIntent = event.data.object;
-			console.log("Payment succeeded:", paymentIntent.id, "whole data", paymentIntent);
+			console.log("Payment succeeded:", paymentIntent.id);
 			
-			// const userId = paymentIntent.metadata.userId;
+			const userId = paymentIntent.metadata.userId;
 			try {
 				await pool.query(
-					`UPDATE payments SET payment_status = 'paid' WHERE stripe_payment_id = $1`,
-					[ paymentIntent.id ]
+					`INSERT INTO payments
+					(stripe_payment_id, user_id, amount, currency, status)
+					VALUES ($1, $2, $3, $4, $5)`,
+					[
+						paymentIntent.id,
+						userId,
+						paymentIntent.amount,
+						paymentIntent.currency,
+						paymentIntent.status
+					]
 				);
-				// await pool.query(
-				// 	`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
-				// 	[userId]
-				// );
+				await pool.query(
+					`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
+					[userId]
+				);
 				console.log("Payment has been saved");
 			} catch (error) {
 				console.error("DB error:", error);
@@ -66,6 +74,7 @@ app.get("/init-db", async (req, res) => {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
+		payment_status VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
@@ -129,9 +138,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 		// Send payment status to payments database
 		await pool.query(
-			`INSERT INTO payments
-			(stripe_payment_id, user_id, amount, currency, payment_status)
-			VALUES ($1, $2, $3, $4, $5)`,
+			`UPDATE users SET payment_status = 'create=payment-intent' WHERE id = $1`,
 			[paymentIntent.id, userId, amount, currency, paymentIntent.status]
 		);
         res.send({

@@ -1,6 +1,7 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
+    payment_status VARCHAR(50),
     created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE TABLE payments (
