@@ -216,7 +216,7 @@ app.post('/create-payment-intent', async (req, res) => {
 		`SELECT * FROM payment_links WHERE token=$1 AND used=FALSE AND expires_at > NOW()`,
 		[token]
 	);
-	console.log("TOKEN RESULTS", tokenResult);
+	// console.log("TOKEN RESULTS", tokenResult);
 	if (tokenResult.rowCount === 0) {
 		return res.status(400).json({ error: "Link has expired or has been used already "});
 	}
