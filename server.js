@@ -31,26 +31,18 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 	switch (event.type) {
 		case 'payment_intent.succeeded':
 			const paymentIntent = event.data.object;
-			console.log("Payment succeeded:", paymentIntent.id);
+			console.log("Payment succeeded:", paymentIntent.id, "whole data", paymentIntent);
 			
-			const userId = paymentIntent.metadata.userId;
+			// const userId = paymentIntent.metadata.userId;
 			try {
 				await pool.query(
-					`INSERT INTO payments
-					(stripe_payment_id, user_id, amount, currency, status)
-					VALUES ($1, $2, $3, $4, $5)`,
-					[
-						paymentIntent.id,
-						userId,
-						paymentIntent.amount,
-						paymentIntent.currency,
-						paymentIntent.status
-					]
+					`UPDATE payments SET payment_status = 'paid' WHERE stripe_payment_id = $1`,
+					[ paymentIntent.id ]
 				);
-				await pool.query(
-					`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
-					[userId]
-				);
+				// await pool.query(
+				// 	`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
+				// 	[userId]
+				// );
 				console.log("Payment has been saved");
 			} catch (error) {
 				console.error("DB error:", error);
@@ -92,7 +84,7 @@ app.get("/init-db2", async (req, res) => {
 		user_id INTEGER REFERENCES users(id),
 		amount INTEGER NOT NULL,
 		currency VARCHAR(10),
-		status VARCHAR(50),
+		payment_status VARCHAR(50),
 		created_at TIMESTAMP DEFAULT NOW()
       );
     `);
@@ -106,17 +98,42 @@ app.get("/init-db2", async (req, res) => {
 app.use(express.json());
 
 app.post('/create-payment-intent', async (req, res) => {
+	// First add user to database, later it should be done on launching the quiz
+	const email = req.body.email;
+	const amount = 200;
+	const currency = 'pln';
+	console.log("EMAIL", email, req.body);
+	const result = await pool.query(
+		`INSERT INTO users (email)
+		VALUES ($1)
+		ON CONFLICT (email)
+		DO UPDATE SET email = EXCLUDED.email
+		RETURNING id`,
+		[email]
+	);
+	const userId = result.rows[0].id;
+	console.log("User ID", userId);
+
+	// Make payment to stripe 
     try {
         const paymentIntent = await stripe.paymentIntents.create({
-			amount: 200, // 2.00 zł
-			currency: 'pln',
+			amount: amount, // 2.00 zł
+			currency: currency,
 			automatic_payment_methods: {
 				enabled: true,
         	},
 			metadata: {
-				userId: "123"
+				userId: userId
 			}
         });
+
+		// Send payment status to payments database
+		await pool.query(
+			`INSERT INTO payments
+			(stripe_payment_id, user_id, amount, currency, payment_status)
+			VALUES ($1, $2, $3, $4, $5)`,
+			[paymentIntent.id, userId, amount, currency, paymentIntent.status]
+		);
         res.send({
         	clientSecret: paymentIntent.client_secret,
         });
@@ -130,7 +147,7 @@ app.get("/user/:id/payment-status", async (req, res) => {
 
 	try {
 		const result = await pool.query(
-			`SELECT payment_status FROM users WHERE id =$1`,
+			`SELECT payment_status FROM payments WHERE user_id =$1`,
 			[userId]
 		);
 
@@ -141,6 +158,27 @@ app.get("/user/:id/payment-status", async (req, res) => {
 		res.json({ status: result.rows[0].payment_status });
 	} catch (error) {
 		res.status(500).json({ error: "Database error"});
+	}
+})
+
+app.get("/users", async (req, res) => {
+	try {
+		const result = await pool.query("SELECT * FROM users");
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error fething users");
+	}
+});
+
+// for test only
+app.get("/payments", async (req, res) => {
+	try {
+		const result = await pool.query("SELECT * FROM payments");
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error fetching payments");
 	}
 })
 
