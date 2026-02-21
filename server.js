@@ -16,6 +16,107 @@ app.use(cors({
   	origin: process.env.FRONTEND_URL
 }));
 
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+	const sig = req.headers['stripe-signature'];
+	let event;
+
+	try {
+		event = stripe.webhooks.constructEvent(
+		req.body,
+		sig,
+		process.env.STRIPE_WEBHOOK_SECRET
+		);
+	} catch (err) {
+		console.log("error received", err.message);
+		return res.status(400).send(`Webhook Error: ${err.message}`);
+	}
+
+	console.log("Event received:", event.type);
+
+	switch (event.type) {
+		case 'payment_intent.succeeded':
+			const paymentIntent = event.data.object;
+			console.log("Payment succeeded:", paymentIntent.id);
+			
+			const userId = paymentIntent.metadata.userId;
+			try {
+				await pool.query(
+					`INSERT INTO payments
+					(stripe_payment_id, user_id, amount, currency, payment_status)
+					VALUES ($1, $2, $3, $4, $5)`,
+					[
+						paymentIntent.id,
+						userId,
+						paymentIntent.amount,
+						paymentIntent.currency,
+						paymentIntent.status
+					]
+				);
+				await pool.query(
+					`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
+					[userId]
+				);
+				console.log("Payment has been saved");
+			} catch (error) {
+				console.error("DB error:", error);
+			}
+
+			break;
+		case 'payment_intent.payment_failed':
+			console.log("Payment failed:", event.data.object.id);
+			break;
+		default:
+			console.log("Unhandled event:", event.type);
+	}
+
+  	res.json({ received: true });
+  
+});
+
+app.get("/init-db", async (req, res) => {
+  try {
+	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
+	await pool.query('DROP TABLE IF EXISTS users CASCADE');
+	await pool.query('DROP TABLE IF EXISTS payment_links');
+    await pool.query(`
+		CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			email VARCHAR(255) UNIQUE NOT NULL,
+			password_hash VARCHAR(255) NOT NULL,
+			payment_status VARCHAR(50),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+    `);
+    await pool.query(`
+		CREATE TABLE IF NOT EXISTS payments (
+			id SERIAL PRIMARY KEY,
+			stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
+			user_id INTEGER REFERENCES users(id),
+			amount INTEGER NOT NULL,
+			currency VARCHAR(10),
+			payment_status VARCHAR(50),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+    `);
+	await pool.query(`
+		CREATE TABLE payment_links (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER REFERENCES users(id),
+			token VARCHAR(255) UNIQUE NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			used BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+	`);
+    res.send("Table created");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error");
+  }
+});
+
+app.use(express.json());
+
 app.post('/auth/register', async (req, res) => {
 	try {
 		const { email, password } = req.body;
@@ -78,107 +179,6 @@ app.post ('/auth/login', async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 })
-
-app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
-	const sig = req.headers['stripe-signature'];
-	let event;
-
-	try {
-		event = stripe.webhooks.constructEvent(
-		req.body,
-		sig,
-		process.env.STRIPE_WEBHOOK_SECRET
-		);
-	} catch (err) {
-		console.log("error received", err.message);
-		return res.status(400).send(`Webhook Error: ${err.message}`);
-	}
-
-	console.log("Event received:", event.type);
-
-	switch (event.type) {
-		case 'payment_intent.succeeded':
-			const paymentIntent = event.data.object;
-			console.log("Payment succeeded:", paymentIntent.id);
-			
-			const userId = paymentIntent.metadata.userId;
-			try {
-				await pool.query(
-					`INSERT INTO payments
-					(stripe_payment_id, user_id, amount, currency, payment_status)
-					VALUES ($1, $2, $3, $4, $5)`,
-					[
-						paymentIntent.id,
-						userId,
-						paymentIntent.amount,
-						paymentIntent.currency,
-						paymentIntent.status
-					]
-				);
-				await pool.query(
-					`UPDATE users SET payment_status = 'paid' WHERE id = $1`,
-					[userId]
-				);
-				console.log("Payment has been saved");
-			} catch (error) {
-				console.error("DB error:", error);
-			}
-
-			break;
-		case 'payment_intent.payment_failed':
-			console.log("Payment failed:", event.data.object.id);
-			break;
-		default:
-			console.log("Unhandled event:", event.type);
-	}
-
-  	res.json({ received: true });
-  
-});
-
-app.get("/init-db", async (req, res) => {
-  try {
-	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
-	await pool.query('DROP TABLE IF EXISTS users CASCADE');
-	// await pool.query('DROP TABLE IF EXISTS payment_links');
-    await pool.query(`
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			email VARCHAR(255) UNIQUE NOT NULL,
-			password_hash VARCHAR(255) NOT NULL,
-			payment_status VARCHAR(50),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-    `);
-    await pool.query(`
-		CREATE TABLE IF NOT EXISTS payments (
-			id SERIAL PRIMARY KEY,
-			stripe_payment_id VARCHAR(255) UNIQUE NOT NULL,
-			user_id INTEGER REFERENCES users(id),
-			amount INTEGER NOT NULL,
-			currency VARCHAR(10),
-			payment_status VARCHAR(50),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-    `);
-	await pool.query(`
-		CREATE TABLE payment_links (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER REFERENCES users(id),
-			token VARCHAR(255) UNIQUE NOT NULL,
-			expires_at TIMESTAMP NOT NULL,
-			used BOOLEAN DEFAULT FALSE,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-	`);
-    res.send("Table created");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error");
-  }
-});
-
-app.use(express.json());
 
 app.post('/sales/generate-payment-link', async (req, res) => {
 	try {
