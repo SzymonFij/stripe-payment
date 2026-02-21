@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const crypto = requires('crypto');
+const crypto = require('crypto');
 const cors = require('cors');
 const Stripe = require('stripe');
 const pool = require('./db');
