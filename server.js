@@ -140,7 +140,7 @@ app.get("/init-db", async (req, res) => {
   try {
 	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
 	await pool.query('DROP TABLE IF EXISTS users CASCADE');
-	await pool.query('DROP TABLE IF EXISTS payment_links');
+	// await pool.query('DROP TABLE IF EXISTS payment_links');
     await pool.query(`
 		CREATE TABLE IF NOT EXISTS users (
 			id SERIAL PRIMARY KEY,
