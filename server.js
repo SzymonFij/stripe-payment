@@ -292,7 +292,7 @@ app.post('/sales/renew-payment-link', async (req, res) => {
 			[newToken, newExpires, oldLink.id]
 		);
 
-		const newLink = `http://localhost:4137/platnosc?tkoen=${newToken}`;
+		const newLink = `http://localhost:4137/platnosc?token=${newToken}`;
 		res.json({ link: newLink, expiresAt: newExpires });
 	} catch (error) {
 		console.error(error)
