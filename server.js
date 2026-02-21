@@ -134,7 +134,7 @@ app.post('/create-payment-intent', async (req, res) => {
 		// Send payment status to payments database
 		await pool.query(
 			`UPDATE users SET payment_status = 'create=payment-intent' WHERE id = $1`,
-			[paymentIntent.id, userId, amount, currency, paymentIntent.status]
+			[userId]
 		);
         res.send({
         	clientSecret: paymentIntent.client_secret,
