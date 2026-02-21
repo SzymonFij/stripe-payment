@@ -265,6 +265,16 @@ app.get("/payments", async (req, res) => {
 		console.error(error);
 		res.status(500).send("Error fetching payments");
 	}
+});
+
+app.get("/tokens", async (req, res) => {
+	try {
+		const result = await pool.query("SELECT * FROM payment_links");
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error fetching payment_links");
+	}
 })
 
 app.listen(process.env.PORT, () => {
