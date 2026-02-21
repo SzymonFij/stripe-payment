@@ -70,6 +70,8 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
 app.get("/init-db", async (req, res) => {
   try {
+	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
+	await pool.query('DROP TABLE IF EXISTS users CASCADE');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -79,13 +81,6 @@ app.get("/init-db", async (req, res) => {
       );
     `);
     res.send("Table created");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error");
-  }
-});
-app.get("/init-db2", async (req, res) => {
-  try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS payments (
 		id SERIAL PRIMARY KEY,
