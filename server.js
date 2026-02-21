@@ -222,6 +222,8 @@ app.post('/create-payment-intent', async (req, res) => {
 	}
 
 	const linkData = tokenResult.rows[0];
+	console.log("link data reading", linkData);
+	console.log("TOKEN RESULT", tokenResult);
 	const userId = linkData.user_id;
 	console.log("link data", linkData, "userID", userID);
 
