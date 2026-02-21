@@ -283,7 +283,7 @@ app.post('/sales/renew-payment-link', async (req, res) => {
 			return res.status(400).json({ error: "No link was found"});
 
 		}
-		const oldLink = result.row[0];
+		const oldLink = result.rows[0];
 		const newToken = crypto.randomBytes(32).toString('hex');
 		const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
