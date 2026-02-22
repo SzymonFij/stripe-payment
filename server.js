@@ -191,7 +191,7 @@ app.use('/auth', authRoutes);
 // 	}
 // })
 
-app.usr('/admin', adminRoutes);
+app.use('/admin', adminRoutes);
 app.use('/sales', salesRoutes);
 app.use('/users', usersRoutes);
 // app.post('/sales/generate-payment-link', async (req, res) => {
