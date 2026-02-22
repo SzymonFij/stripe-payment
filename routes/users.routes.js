@@ -9,7 +9,7 @@ const router = express.Router();
 /** POST /users/:id/payment-status
  * Access to: sales, superadmin
  */
-router.post(
+router.get(
     '/users/:id/payment-status',
     authenticate,
     authorize(ROLES.SALES, ROLES.SUPERADMIN),
