@@ -22,7 +22,7 @@ const SALT_ROUNDS = 10; // Rounds to hash password;
 app.use(cors({
   	origin: process.env.FRONTEND_URL
 }));
-// ensureSuperAdminExists(); // If SuperAdmin role does not exist - create with ENV parameters.
+ensureSuperAdminExists(); // If SuperAdmin role does not exist - create with ENV parameters.
 
 app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
 	const sig = req.headers['stripe-signature'];
