@@ -1,8 +1,11 @@
 const express = require('express');
 const pool = require('../db.js');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || "supertajnehaslo";
+const SALT_ROUNDS = 10; // Rounds to hash password;
 
 router.post('/register', async (req, res) => {
 	try {
