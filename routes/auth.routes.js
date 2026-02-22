@@ -45,7 +45,7 @@ router.post ('/login', async (req, res) => {
 		}
 		// Get user from database
 		const result = await pool.query(
-			`SELECT id, email, password_hash FROM users WHERE email=$1`,
+			`SELECT id, email, password_hash, role FROM users WHERE email=$1`,
 			[email]
 		);
 
