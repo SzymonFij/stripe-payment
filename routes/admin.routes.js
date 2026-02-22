@@ -1,9 +1,9 @@
 const express = require('express');
 const crypto = require('crypto');
 const pool = require('../db.js');
-const authenticate = require('../middleware/auth.middleware.js');
-const authorize = require('../middleware/role.middleware.js');
-const ROLES = require('../src/constants/roles.js');
+const { authenticate } = require('../middleware/auth.middleware.js');
+const { authorize } = require('../middleware/role.middleware.js');
+const { ROLES } = require('../src/constants/roles.js');
 
 const router = express.Router();
 /** POST /admin/create-sales

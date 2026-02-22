@@ -1,8 +1,8 @@
 const bcrypt = require('bcrypt');
 const pool = require('../db.js');
-const ROLES = require('../src/constants/roles.js');
+const { ROLES } = require('../src/constants/roles.js');
 
-export const ensureSuperAdminExists = async () => {
+const ensureSuperAdminExists = async () => {
     const result = await pool.query(
         `SELECT * FROM users WHERE role=$1 LIMIT 1`,
         [ROLES.SUPERADMIN]
@@ -27,3 +27,4 @@ export const ensureSuperAdminExists = async () => {
         console.log("Superadmin has been created");
     }
 }
+module.exports = { ensureSuperAdminExists };
