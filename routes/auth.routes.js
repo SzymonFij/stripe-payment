@@ -54,6 +54,7 @@ router.post ('/login', async (req, res) => {
 		}
 
 		const user = result.rows[0];
+        console.log("USER logged in", user.role, user.email);
 
 		// Password comparison
 		const isValid = await bcrypt.compare(password, user.password_hash);
