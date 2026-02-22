@@ -59,4 +59,4 @@ router.get("/tokens", authenticate, authorize(ROLES.SUPERADMIN), async (req, res
 	}
 })
 
-export default router;
+module.exports = router;

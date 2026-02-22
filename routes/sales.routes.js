@@ -73,4 +73,4 @@ router.post(
     }
 );
 
-export default router;
+module.exports = router;
