@@ -1,9 +1,10 @@
 const express = require('express');
 const pool = require('../db.js');
+const bcrypt = require('bcrypt');
 
 const router = express.Router();
 
-router.post('/auth/register', async (req, res) => {
+router.post('/register', async (req, res) => {
 	try {
 		const { email, password } = req.body;
 		if (!email || !password) {
@@ -33,7 +34,7 @@ router.post('/auth/register', async (req, res) => {
 	}
 })
 
-router.post ('/auth/login', async (req, res) => {
+router.post ('/login', async (req, res) => {
 	try {
 		const {email, password} = req.body;
 		if (!email || !password) {
