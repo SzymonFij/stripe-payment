@@ -1,6 +1,6 @@
-import bcrypt from 'bcrypt';
-import { pool } from '../db.js';
-import { ROLES } from '../src/constants/roles.js';
+const bcrypt = require('bcrypt');
+const pool = require('../db.js');
+const ROLES = require('../src/constants/roles.js');
 
 export const ensureSuperAdminExists = async () => {
     const result = await pool.query(

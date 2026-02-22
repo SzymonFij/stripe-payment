@@ -6,12 +6,12 @@ const bcrypt = require('bcrypt');
 const cors = require('cors');
 const Stripe = require('stripe');
 const pool = require('./db');
-import { authenticate } from './middleware/auth.middleware.js';
-import adminRoutes from './routes/admin.routes.js';
-import salesRoutes from './routes/sales.routes.js';
-import usersRoutes from './routes/users.routes.js';
-import { ROLES } from './src/constants/roles.js';
-import { ensureSuperAdminExists } from './bootstrap/admin.bootstrap.js';
+// const { authenticate } = require('./middleware/auth.middleware.js');
+const adminRoutes = require('./routes/admin.routes.js');
+const salesRoutes = require('./routes/sales.routes.js');
+const usersRoutes = require('./routes/users.routes.js');
+// const { ROLES } = require('./src/constants/roles.js');
+const { ensureSuperAdminExists } = require('./bootstrap/admin.bootstrap.js');
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

@@ -1,9 +1,9 @@
-import express from 'express';
-import crypto from 'crypto';
-import { pool } from '../db.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { authorize } from '../middleware/role.middleware.js';
-import { ROLES } from '../src/constants/roles.js';
+const express = require('express');
+const crypto = require('crypto');
+const pool = require('../db.js');
+const authenticate = require('../middleware/auth.middleware.js');
+const authorize = require('../middleware/role.middleware.js');
+const ROLES = require('../src/constants/roles.js');
 
 const router = express.Router();
 /** POST /admin/create-sales
