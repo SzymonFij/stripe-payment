@@ -1,0 +1,62 @@
+import express from 'express';
+import crypto from 'crypto';
+import { pool } from '../db.js';
+import { authenticate } from '../middleware/auth.middleware.js';
+import { authorize } from '../middleware/role.middleware.js';
+import { ROLES } from '../src/constants/roles.js';
+
+const router = express.Router();
+/** POST /admin/create-sales
+ * Access to: superadmin
+ */
+router.post(
+    '/create-sales',
+    authenticate,
+    authorize(ROLES.SUPERADMIN),
+    async (req, res) => {
+        const { email, password } = req.body;
+
+        const hash = await bcrypt.hash(password, 10);
+
+        const result = await pool.query(
+            `INSERT INTO users (email, password_hash, role)
+            VALUES ($1, $2, $3)
+            RETURNING id,email,role`,
+            [email, hash, ROLES.SALES]
+        );
+
+        res.json(result.rows[0]);
+    }
+);
+
+router.get("/users", authenticate, authorize(ROLES.SUPERADMIN), async (req, res) => {
+	try {
+		const result = await pool.query("SELECT * FROM users");
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error fething users");
+	}
+});
+
+router.get("/payments", authenticate, authorize(ROLES.SUPERADMIN), async (req, res) => {
+	try {
+		const result = await pool.query("SELECT * FROM payments");
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error fetching payments");
+	}
+});
+
+router.get("/tokens", authenticate, authorize(ROLES.SUPERADMIN), async (req, res) => {
+	try {
+		const result = await pool.query("SELECT * FROM payment_links");
+		res.json(result.rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error fetching payment_links");
+	}
+})
+
+export default router;
