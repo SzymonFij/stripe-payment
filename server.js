@@ -130,15 +130,15 @@ app.get("/init-db", async (req, res) => {
 		);
     `);
 	// Commented code should be run only once
-	// CREATE TYPE payment_type AS ENUM ('one_time', 'subscription');
-	// 	CREATE TYPE payment_status AS ENUM (
-	// 		'pending',
-	// 		'succeeded',
-	// 		'failed',
-	// 		'canceled',
-	// 		'refunded'
-	// 	);
     await pool.query(`
+		CREATE TYPE payment_type AS ENUM ('one_time', 'subscription');
+			CREATE TYPE payment_status AS ENUM (
+				'pending',
+				'succeeded',
+				'failed',
+				'canceled',
+				'refunded'
+			);
 		CREATE TABLE IF NOT EXISTS payments (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
