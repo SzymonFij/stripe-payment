@@ -10,27 +10,44 @@ const router = express.Router();
  * Access to: sales, superadmin
  */
 router.get(
-    '/users/:id/payment-status',
-    authenticate,
-    authorize(ROLES.SALES, ROLES.SUPERADMIN),
+    '/payment-status',
+    // authenticate,
+    // authorize(ROLES.SALES, ROLES.SUPERADMIN),
     async (req, res) => {
-        const userId = req.params.id;
+        const email = req.body.email;
 
         try {
             const result = await pool.query(
-                `SELECT payment_status FROM payments WHERE user_id =$1`,
-                [userId]
+                `SELECT status FROM payments WHERE email =$1`,
+                [email]
             );
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: "User not found" });
             }
 
+            console.log("Check if only one payment was created", result.rows);
             res.json({ status: result.rows[0].payment_status });
         } catch (error) {
             res.status(500).json({ error: "Database error"});
         }
     }
 );
+
+router.get("/subscription", async (req, res) => {
+    const email = req.body.email;
+
+    const result = await pool.query(
+        `SELECT *
+        FROM subscriptions
+        WHERE email = $1
+        AND status = 'active'
+        AND current_period_end > now()`,
+        [email]
+    );
+
+    const hasAccess = result.rows.length > 0;
+    res.json({ status: hasAccess });
+})
 
 module.exports = router;
