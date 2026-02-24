@@ -50,7 +50,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
 	switch (event.type) {
 		case 'payment_intent.succeeded':
-			console.log("Payment succeeded:", paymentIntent.id);
+			console.log("Payment succeeded:", event.dada.object.id);
 			await handlePaymentIntentSucceeded(event.data.object);
 			// const paymentIntent = event.data.object;
 			
