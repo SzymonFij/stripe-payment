@@ -34,7 +34,7 @@ router.get(
                     if (linkRes.rows[0].used) {
                         res.json({ status: "Payment link used, but payment not found. Generate new link."});
                     }
-                    res.json({ status: "Payment link created, waiting for payment."});
+                    res.json({ status: "Payment link created, waiting for payment.", expires_at: linkRes.rows[0].expires_at});
                 } catch {
                     return res.status(404).json({ error: "User not found" });
                 }
