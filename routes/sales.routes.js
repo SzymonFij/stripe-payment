@@ -26,7 +26,13 @@ router.post(
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
             // Save token in database
             await pool.query(
-                `INSERT INTO payment_links (email, token, expires_at) VALUES ($1, $2, $3)`,
+                `INSERT INTO payment_links (email, token, expires_at)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (email)
+                DO UPDATE SET
+                    token = EXCLUDED.token,
+                    expires_at = EXCLUDED.expires_at,
+                    used = FALSE`,
                 [email, token, expiresAt]
             );
             // Generate link for frontend

@@ -14,7 +14,7 @@ router.get(
     // authenticate,
     // authorize(ROLES.SALES, ROLES.SUPERADMIN),
     async (req, res) => {
-        const email = req.body.email;
+        const { email } = req.query;
 
         try {
             const result = await pool.query(
@@ -35,7 +35,7 @@ router.get(
 );
 
 router.get("/subscription", async (req, res) => {
-    const email = req.body.email;
+    const { email } = req.query;
 
     const result = await pool.query(
         `SELECT *

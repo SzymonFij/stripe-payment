@@ -119,16 +119,17 @@ app.get("/init-db", async (req, res) => {
 	await pool.query('DROP TABLE IF EXISTS payments CASCADE;');
 	await pool.query('DROP TABLE IF EXISTS users CASCADE');
 	await pool.query('DROP TABLE IF EXISTS payment_links');
-    await pool.query(`
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			email VARCHAR(255) UNIQUE NOT NULL,
-			password_hash VARCHAR(255) NOT NULL,
-			role VARCHAR(50) DEFAULT 'client',
-			payment_status VARCHAR(50),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-    `);
+	await pool.query('DROP TABLE IF EXISTS subscriptions CASCADE');
+    // await pool.query(`
+	// 	CREATE TABLE IF NOT EXISTS users (
+	// 		id SERIAL PRIMARY KEY,
+	// 		email VARCHAR(255) UNIQUE NOT NULL,
+	// 		password_hash VARCHAR(255) NOT NULL,
+	// 		role VARCHAR(50) DEFAULT 'client',
+	// 		payment_status VARCHAR(50),
+	// 		created_at TIMESTAMP DEFAULT NOW()
+	// 	);
+    // `);
 	// Commented code should be run only once
 	// CREATE TYPE payment_type AS ENUM ('one_time', 'subscription');
 	// 	CREATE TYPE payment_status AS ENUM (
@@ -182,7 +183,7 @@ app.get("/init-db", async (req, res) => {
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
-			email TEXT NOT NULL,
+			email TEXT UNIQUE NOT NULL,
 			token VARCHAR(255) UNIQUE NOT NULL,
 			expires_at TIMESTAMP NOT NULL,
 			used BOOLEAN DEFAULT FALSE,
