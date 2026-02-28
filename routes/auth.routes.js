@@ -23,7 +23,6 @@ router.post('/register', async (req, res) => {
 		);
 		
 		const user = result.rows[0];
-		console.log("USER REGISTERED", user);
 		
 		const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {expiresIn: '7d' });
 		
@@ -54,7 +53,6 @@ router.post ('/login', async (req, res) => {
 		}
 
 		const user = result.rows[0];
-        console.log("USER logged in", user.role, user.email);
 
 		// Password comparison
 		const isValid = await bcrypt.compare(password, user.password_hash);
