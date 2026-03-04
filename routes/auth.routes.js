@@ -11,7 +11,7 @@ router.post('/register', async (req, res) => {
 	try {
 		const { email, password } = req.body;
 		if (!email || !password) {
-			return res.status(400).json({ error: "Email and password are obligatory"});
+			return res.status(400).json({ error: "Email oraz hasło są wymagane"});
 		}
 		
 		//Hashing the password
@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
 		res.json({ user, token });
 	} catch (error) {
 		if (error.code === "23505") { // Unique email
-			return res.status(400).json({ error: "Email is taken"});
+			return res.status(400).json({ error: "Email jest już zajęty"});
 		}
 		console.error(error);
 		res.status(500).json({ error: error.message });
@@ -40,7 +40,7 @@ router.post ('/login', async (req, res) => {
 	try {
 		const {email, password} = req.body;
 		if (!email || !password) {
-			return res.status(400).json({ error: "Email and password are obligatory"});
+			return res.status(400).json({ error: "Email i hasło są wymagane"});
 		}
 		// Get user from database
 		const result = await pool.query(
@@ -49,7 +49,7 @@ router.post ('/login', async (req, res) => {
 		);
 
 		if (result.rowCount === 0) {
-			return res.status(400).json({ error: "Invalid email or password"});
+			return res.status(400).json({ error: "Nieprawidłowy email lub hasło"});
 		}
 
 		const user = result.rows[0];
@@ -57,7 +57,7 @@ router.post ('/login', async (req, res) => {
 		// Password comparison
 		const isValid = await bcrypt.compare(password, user.password_hash);
 		if (!isValid) {
-			return res.status(400).json({ error: "Invalid email or password"});
+			return res.status(400).json({ error: "Nieprawidłowy email lub hasło"});
 		}
 
 		// JWT token

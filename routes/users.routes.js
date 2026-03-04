@@ -20,21 +20,21 @@ router.get(
                         [email]
                     );
                     if (linkRes.rows.length === 0) {
-                        return res.status(404).json({ error: "No payment link was found"});
+                        return res.status(404).json({ error: "Nie znaleziono płatności dla tego maila"});
                     }
                     if (linkRes.rows[0].used) {
-                        res.json({ status: "Payment link used, but payment not found. Generate new link."});
+                        res.json({ status: "Link płatności został użyty, ale płatność nie została wykonana. Wygeneruj nowy link."});
                     }
-                    res.json({ status: "Payment link created, waiting for payment.", expires_at: linkRes.rows[0].expires_at});
+                    res.json({ status: "Link płatności został utworzony, oczekiwanie na płatność.", expires_at: linkRes.rows[0].expires_at});
                 } catch {
-                    return res.status(404).json({ error: "User not found" });
+                    return res.status(404).json({ error: "Nie znaleziono użytkownika" });
                 }
             }
 
             console.log("Check if only one payment was created", result.rows);
-            res.json({ status: result.rows[0].status, created_at: result.rows[0].created_at });
+            res.json({ status: result.rows[0].status, created_at: result.rows[0].created_at, payed_at: result.rows[0].payed_at });
         } catch (error) {
-            res.status(500).json({ error: "Database error"});
+            res.status(500).json({ error: "Błąd serwera"});
         }
     }
 );

@@ -38,7 +38,7 @@ router.get("/users",
 		res.json(result.rows);
 	} catch (error) {
 		console.error(error);
-		res.status(500).send("Error fething users");
+		res.status(500).send("Błąd podczas pobierania użytkowników");
 	}
 });
 
@@ -50,7 +50,7 @@ router.get("/payments",
 		res.json(result.rows);
 	} catch (error) {
 		console.error(error);
-		res.status(500).send("Error fetching payments");
+		res.status(500).send("Błąd podczas pobierania płatności");
 	}
 });
 
@@ -62,7 +62,7 @@ router.get("/tokens",
 		res.json(result.rows);
 	} catch (error) {
 		console.error(error);
-		res.status(500).send("Error fetching payment_links");
+		res.status(500).send("Błąd podczas pobierania linków płatności");
 	}
 });
 
@@ -74,7 +74,7 @@ router.get("/subscriptions",
 		res.json(result.rows);
 	} catch (error) {
 		console.error(error);
-		res.status(500).send("Error fetching subscriptions");
+		res.status(500).send("Błąd podczas pobierania subskrypcji");
 	}
 })
 

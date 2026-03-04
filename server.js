@@ -119,6 +119,7 @@ app.get("/init-db", async (req, res) => {
 
 			type payment_type NOT NULL,
 			status payment_status NOT NULL,
+			payed_at TIMESTAMP WITH TIME ZONE,
 
 			amount INTEGER NOT NULL,
 			currency VARCHAR(10),
@@ -172,7 +173,7 @@ app.use('/sales', salesRoutes);
 app.use('/users', usersRoutes);
 
 app.post('/create-payment-intent', async (req, res) => {
-	const amount = 200;
+	const price = await stripe.prices.retrieve("price_1T2GcwIqG0lEuV8tZMT4DAG5");
 	const currency = 'pln';
 	// First add user to database, later it should be done on launching the quiz
 	const token = req.query.token;
@@ -182,7 +183,7 @@ app.post('/create-payment-intent', async (req, res) => {
 		[token]
 	);
 	if (tokenResult.rowCount === 0) {
-		return res.status(400).json({ error: "Link has expired or has been used already "});
+		return res.status(400).json({ error: "Link wygasł lub został już użyty" });
 	}
 
 	const linkData = tokenResult.rows[0];
@@ -191,7 +192,7 @@ app.post('/create-payment-intent', async (req, res) => {
 	// Make payment to stripe 
     try {
         const paymentIntent = await stripe.paymentIntents.create({
-			amount: amount, // 2.00 zł
+			amount: price,
 			currency: currency,
 			automatic_payment_methods: {
 				enabled: true,
@@ -271,7 +272,7 @@ app.post("/create-portal-session", async (req, res) => {
 	);
 
 	if (!subscription.rows.length) {
-		return res.status(404).json({ error: `Subscription for user ${email} not found` });
+		return res.status(404).json({ error: `Subskrypcja dla użytkownika ${email} nie została znaleziona` });
 	}
 
 	const portalSession = await stripe.billingPortal.sessions.create({

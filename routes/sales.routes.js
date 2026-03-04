@@ -58,7 +58,7 @@ router.post(
                 [token]
             );
             if (result.rowCount === 0) {
-                return res.status(400).json({ error: "No link was found"});
+                return res.status(400).json({ error: "Nie znaleziono linku"});
 
             }
             const oldLink = result.rows[0];
