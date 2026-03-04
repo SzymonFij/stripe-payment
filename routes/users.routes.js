@@ -1,18 +1,9 @@
 const express = require('express');
-const crypto = require('crypto');
 const pool = require('../db.js');
-const { authenticate } = require('../middleware/auth.middleware.js');
-const { authorize } = require('../middleware/role.middleware.js');
-const { ROLES } = require('../src/constants/roles.js');
 
 const router = express.Router();
-/** POST /users/:id/payment-status
- * Access to: sales, superadmin
- */
 router.get(
     '/payment-status',
-    // authenticate,
-    // authorize(ROLES.SALES, ROLES.SUPERADMIN),
     async (req, res) => {
         const { email } = req.query;
 
