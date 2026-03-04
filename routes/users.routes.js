@@ -9,7 +9,7 @@ router.get(
 
         try {
             const result = await pool.query(
-                `SELECT status FROM payments WHERE email =$1`,
+                `SELECT * FROM payments WHERE email =$1`,
                 [email]
             );
 

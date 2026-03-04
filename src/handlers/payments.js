@@ -19,7 +19,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             currency,
             payed_at
         )
-        VALUES ($1,$2,$3,'one_time','succeeded',$4,$5,NOW())`,
+        VALUES ($1,$2,$3,'one_time','sukces',$4,$5,NOW())`,
         [
             email,
             paymentIntent.id,
