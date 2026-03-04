@@ -41,7 +41,7 @@ router.get(
             }
 
             console.log("Check if only one payment was created", result.rows);
-            res.json({ status: result.rows[0].status });
+            res.json({ status: result.rows[0].status, created_at: result.rows[0].created_at });
         } catch (error) {
             res.status(500).json({ error: "Database error"});
         }
