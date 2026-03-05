@@ -41,7 +41,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             source,
             status,
             current_period_start,
-            current_period_end,
+            current_period_end
         )
         VALUES ($1,$2,$3,
             NOW(),

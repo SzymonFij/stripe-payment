@@ -106,8 +106,8 @@ app.get("/init-db", async (req, res) => {
 	// 		'canceled',
 	// 		'refunded'
 	// 	);
+	// CREATE TYPE subscription_source AS ENUM ('srtipe_subscription', 'one_time');
     await pool.query(`
-		CREATE TYPE subscription_source AS ENUM ('srtipe_subscription', 'one_time');
 		CREATE TABLE IF NOT EXISTS payments (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
