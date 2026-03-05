@@ -42,12 +42,14 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             status,
             current_period_start,
             current_period_end,
-            stripe_subscription_id
+            stripe_subscription_id,
+            stripe_customer_id
         )
         VALUES ($1,$2,$3,
             NOW(),
             NOW() + INTERVAL '${interval}',
-            $4
+            $4,
+            $5
         )
         ON CONFLICT (email)
         DO UPDATE SET
@@ -57,7 +59,8 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             email,
             'one_time',
             'active',
-            email // using email as a dummy subscription id for one-time payments
+            email, // using email as a dummy subscription id for one-time payments
+            email  // using email as a dummy customer id for one-time payments
         ]
     );
 }
