@@ -19,7 +19,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             currency,
             paid_at
         )
-        VALUES ($1,$2,$3,'one_time','sukces',$4,$5,NOW())`,
+        VALUES ($1,$2,$3,'one_time','succeeded',$4,$5,NOW())`,
         [
             email,
             paymentIntent.id,
@@ -94,7 +94,7 @@ const handleInvoicePaid = async (invoice) => {
         )
         VALUES ($1,$2,$3,$4,
             'subskrypcja',
-            'sukces',
+            'succeeded',
             $5,$6,
             to_timestamp($7),
             to_timestamp($8)
