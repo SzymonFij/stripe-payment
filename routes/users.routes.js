@@ -9,7 +9,7 @@ router.get(
 
         try {
             const result = await pool.query(
-                `SELECT * FROM payments WHERE email =$1`,
+                `SELECT * FROM payments WHERE email =$1 ORDER BY paid_at DESC LIMIT 1`,
                 [email]
             );
 
@@ -23,9 +23,9 @@ router.get(
                         return res.status(404).json({ error: "Nie znaleziono płatności dla tego maila"});
                     }
                     if (linkRes.rows[0].used) {
-                        res.json({ status: "Link płatności został użyty, ale płatność nie została wykonana. Wygeneruj nowy link."});
+                        return res.json({ status: "Link płatności został użyty, ale płatność nie została wykonana. Wygeneruj nowy link."});
                     }
-                    res.json({ status: "Link płatności został utworzony, oczekiwanie na płatność.", expires_at: linkRes.rows[0].expires_at});
+                    return res.json({ status: "Link płatności został utworzony, oczekiwanie na płatność.", expires_at: linkRes.rows[0].expires_at});
                 } catch {
                     return res.status(404).json({ error: "Nie znaleziono użytkownika" });
                 }
@@ -42,6 +42,10 @@ router.get(
 router.get("/subscription", async (req, res) => {
     const { email } = req.query;
 
+    if (!email) {
+        return res.status(400).json({ error: "Email jest wymagany" });
+    }
+
     const result = await pool.query(
         `SELECT *
         FROM subscriptions
@@ -51,8 +55,22 @@ router.get("/subscription", async (req, res) => {
         [email]
     );
 
-    const hasAccess = result.rows.length > 0;
-    res.json({ status: hasAccess });
+    if (result.rows.length === 0) {
+        return res.json({ status: false });
+    }
+
+    const subscription = result.rows[0];
+
+    res.json({ status: true,
+        subscription: {
+            stripe_subscription_id: subscription.stripe_subscription_id,
+            stripe_customer_id: subscription.stripe_customer_id,
+            source: subscription.source,
+            current_period_start: subscription.current_period_start,
+            current_period_end: subscription.current_period_end,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+        }
+     });
 })
 
 module.exports = router;

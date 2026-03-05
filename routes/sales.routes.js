@@ -6,6 +6,29 @@ const { authorize } = require('../middleware/role.middleware.js');
 const { ROLES } = require('../src/constants/roles.js');
 
 const router = express.Router();
+
+// helper used by both routes to keep logic DRY
+async function createPaymentLink(email, pathSuffix = '/platnosc') {
+    // generate random token and expiration
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day
+
+    await pool.query(
+        `INSERT INTO payment_links (email, token, expires_at)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (email)
+         DO UPDATE SET
+             token = EXCLUDED.token,
+             expires_at = EXCLUDED.expires_at,
+             used = FALSE`,
+        [email, token, expiresAt]
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || '';
+    const link = `${frontendUrl}${pathSuffix}?token=${token}`;
+    return { link, expiresAt };
+}
+
 /** POST /sales/generate-payment-link
  * Access to: sales, superadmin
  */
@@ -15,32 +38,45 @@ router.post(
     // authorize(ROLES.SALES, ROLES.SUPERADMIN),
     async (req, res) => {
         try {
-		    const { email } = req.body;
+            const { email } = req.body;
 
             if (!email) {
-                return res.status(400).json({ error: "No email"});
+                return res.status(400).json({ error: "No email" });
             }
-            // Generate random token
-            const token = crypto.randomBytes(32).toString('hex');
-            // Set expiration time for 1 day
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-            // Save token in database
-            await pool.query(
-                `INSERT INTO payment_links (email, token, expires_at)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (email)
-                DO UPDATE SET
-                    token = EXCLUDED.token,
-                    expires_at = EXCLUDED.expires_at,
-                    used = FALSE`,
-                [email, token, expiresAt]
-            );
-            // Generate link for frontend
-            const link = `${process.env.FRONTEND_URL}/platnosc?token=${token}`;
+            // quick sanity check on format
+            if (!/\S+@\S+\.\S+/.test(email)) {
+                return res.status(400).json({ error: "Invalid email format" });
+            }
+
+            const { link, expiresAt } = await createPaymentLink(email);
             res.json({ link, expiresAt });
         } catch (error) {
             console.error(error);
-            res.send(500).json({ error: error.message });
+            res.status(500).json({ error: error.message });
+        }
+    }
+);
+
+router.post(
+    '/generate-payment-link-yearly',
+    // authenticate,
+    // authorize(ROLES.SALES, ROLES.SUPERADMIN),
+    async (req, res) => {
+        try {
+            const { email } = req.body;
+
+            if (!email) {
+                return res.status(400).json({ error: "No email" });
+            }
+            if (!/\S+@\S+\.\S+/.test(email)) {
+                return res.status(400).json({ error: "Invalid email format" });
+            }
+
+            const { link, expiresAt } = await createPaymentLink(email, '/platnosc-roczna');
+            res.json({ link, expiresAt });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: error.message });
         }
     }
 );

@@ -107,6 +107,7 @@ app.get("/init-db", async (req, res) => {
 	// 		'refunded'
 	// 	);
     await pool.query(`
+		CREATE TYPE subscription_source AS ENUM ('srtipe_subscription', 'one_time');
 		CREATE TABLE IF NOT EXISTS payments (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -134,10 +135,12 @@ app.get("/init-db", async (req, res) => {
 		CREATE TABLE IF NOT EXISTS subscriptions (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			
-			email TEXT NOT NULL,
+			email TEXT UNIQUE NOT NULL,
 
 			stripe_subscription_id TEXT UNIQUE NOT NULL,
 			stripe_customer_id TEXT NOT NULL,
+
+			source subscription_source NOT NULL,
 
 			status TEXT NOT NULL,
 			current_period_start TIMESTAMP WITH TIME ZONE,
@@ -172,47 +175,52 @@ app.use(express.json());
 app.use('/sales', salesRoutes);
 app.use('/users', usersRoutes);
 
-app.post('/create-payment-intent', async (req, res) => {
-	const price = await stripe.prices.retrieve("price_1T2GcwIqG0lEuV8tZMT4DAG5");
-	const currency = 'pln';
-	// First add user to database, later it should be done on launching the quiz
-	const token = req.query.token;
-	// Token verification
-	const tokenResult = await pool.query(
-		`SELECT * FROM payment_links WHERE token=$1 AND used=FALSE AND expires_at > NOW()`,
-		[token]
-	);
-	if (tokenResult.rowCount === 0) {
-		return res.status(400).json({ error: "Link wygasł lub został już użyty" });
-	}
-
-	const linkData = tokenResult.rows[0];
-	const email = linkData.email;
-
-	// Make payment to stripe 
+// helper for the two intent routes
+async function createIntentFromToken(req, res, priceId, paymentType) {
     try {
+        const price = await stripe.prices.retrieve(priceId);
+
+        const token = req.query.token;
+        if (!token) {
+            return res.status(400).json({ error: 'Nieprawidłowy token' });
+        }
+
+        const tokenResult = await pool.query(
+            `SELECT * FROM payment_links WHERE token=$1 AND used=FALSE AND expires_at > NOW()`,
+            [token]
+        );
+        if (tokenResult.rowCount === 0) {
+            return res.status(400).json({ error: "Link wygasł lub został już użyty" });
+        }
+
+        const linkData = tokenResult.rows[0];
+        const email = linkData.email;
+
         const paymentIntent = await stripe.paymentIntents.create({
-			amount: price.unit_amount,
-			currency: price.currency,
-			automatic_payment_methods: {
-				enabled: true,
-        	},
-			metadata: {
-				email: email
-			}
+            amount: price.unit_amount,
+            currency: price.currency,
+            automatic_payment_methods: { enabled: true },
+            metadata: { email, paymentType },
         });
 
-		// Set token as USED
-		await pool.query(
-			`UPDATE payment_links SET used=TRUE WHERE id=$1`,
-			[linkData.id]
-		);
-        res.send({
-        	clientSecret: paymentIntent.client_secret,
-        });
+        await pool.query(
+            `UPDATE payment_links SET used=TRUE WHERE id=$1`,
+            [linkData.id]
+        );
+
+        res.send({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: error.message });
     }
+}
+
+app.post('/create-payment-intent', async (req, res) => {
+    await createIntentFromToken(req, res, 'price_1T2GcwIqG0lEuV8tZMT4DAG5', "monthly");
+});
+
+app.post('/create-payment-intent-yearly', async (req, res) => {
+    await createIntentFromToken(req, res, 'price_1T7LvaIqG0lEuV8tJc91Lx67', "yearly");
 });
 
 app.post("/create-subscription-session", async (req, res) => {

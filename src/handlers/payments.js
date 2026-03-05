@@ -2,11 +2,15 @@ const pool = require('../../db');
 
 const handlePaymentIntentSucceeded = async (paymentIntent) => {
     const email = paymentIntent.receipt_email || paymentIntent.metadata.email;
+    const paymentType = paymentIntent.metadata.paymentType;
     console.log("Payment succeeded:", paymentIntent.id);
+    console.log("PAYMENT TO BE PROLONGED BY:", paymentType);
 
     if (!email) {
         return;
     }
+
+    const interval = paymentType === "yearly" ? '1 year' : '1 month';
 
     await pool.query(
         `INSERT INTO payments (
@@ -17,15 +21,40 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             status,
             amount,
             currency,
-            paid_at
+            paid_at,
+            period_end
         )
-        VALUES ($1,$2,$3,'one_time','succeeded',$4,$5,NOW())`,
+        VALUES ($1,$2,$3,'one_time','succeeded',$4,$5,NOW(),NOW() + INTERVAL '${interval}')`,
         [
             email,
             paymentIntent.id,
             paymentIntent.customer,
             paymentIntent.amount,
             paymentIntent.currency
+        ]
+    );
+
+    
+    await pool.query(
+        `INSERT INTO subscriptions (
+            email,
+            source,
+            status,
+            current_period_start,
+            current_period_end,
+        )
+        VALUES ($1,$2,$3,
+            NOW(),
+            NOW() + INTERVAL '${interval}'
+        )
+        ON CONFLICT (email)
+        DO UPDATE SET
+            current_period_end = GREATEST(subscriptions.current_period_end, NOW()) + INTERVAL '${interval}',
+            updated_at = now()`,
+        [
+            email,
+            'one_time',
+            'active',
         ]
     );
 }
@@ -44,27 +73,29 @@ const handleCheckoutCompleted = async (session, stripe) => {
             email,
             stripe_subscription_id,
             stripe_customer_id,
+            source,
             status,
             current_period_start,
             current_period_end,
             cancel_at_period_end
         )
-        VALUES ($1,$2,$3,$4,
-            to_timestamp($5),
+        VALUES ($1,$2,$3,$4,$5
             to_timestamp($6),
-            $7
+            to_timestamp($7),
+            $8
         )
         ON CONFLICT (stripe_subscription_id)
         DO UPDATE SET
             status = EXCLUDED.status,
             current_period_start = EXCLUDED.current_period_start,
-            current_period_end = EXCLUDED.current_periond_end,
+            current_period_end = EXCLUDED.current_period_end,
             cancel_at_period_end = EXCLUDED.cancel_at_period_end,
             updated_at = now()`,
         [
             email,
             subscription.id,
             subscription.customer,
+            'stripe_subscription',
             subscription.status,
             subscription.current_period_start,
             subscription.current_period_end,
@@ -93,7 +124,7 @@ const handleInvoicePaid = async (invoice) => {
             period_end
         )
         VALUES ($1,$2,$3,$4,
-            'subskrypcja',
+            'subscription',
             'succeeded',
             $5,$6,
             to_timestamp($7),
