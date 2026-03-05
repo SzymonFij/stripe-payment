@@ -119,7 +119,7 @@ app.get("/init-db", async (req, res) => {
 
 			type payment_type NOT NULL,
 			status payment_status NOT NULL,
-			payed_at TIMESTAMP WITH TIME ZONE,
+			paid_at TIMESTAMP WITH TIME ZONE,
 
 			amount INTEGER NOT NULL,
 			currency VARCHAR(10),

@@ -32,7 +32,7 @@ router.get(
             }
 
             console.log("Check if only one payment was created", result.rows);
-            res.json({ status: result.rows[0].status, created_at: result.rows[0].created_at, payed_at: result.rows[0].payed_at });
+            res.json({ status: result.rows[0].status, created_at: result.rows[0].created_at, paid_at: result.rows[0].paid_at });
         } catch (error) {
             res.status(500).json({ error: "Błąd serwera"});
         }

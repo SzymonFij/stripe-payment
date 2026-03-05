@@ -17,7 +17,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             status,
             amount,
             currency,
-            payed_at
+            paid_at
         )
         VALUES ($1,$2,$3,'one_time','sukces',$4,$5,NOW())`,
         [
