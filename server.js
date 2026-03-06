@@ -22,6 +22,8 @@ const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const JWT_SECRET = process.env.JWT_SECRET || "supertajnehaslo";
 const SALT_ROUNDS = 10; // Rounds to hash password;
+const STRIPE_PRICE_ID_MONTHLY = process.env.STRIPE_PRODUCT_ID_MONTHLY;
+const STRIPE_PRICE_ID_YEARLY = process.env.STRIPE_PRODUCT_ID_YEARLY;
 
 app.use(cors({
   	origin: process.env.FRONTEND_URL
@@ -216,11 +218,11 @@ async function createIntentFromToken(req, res, priceId, paymentType) {
 }
 
 app.post('/create-payment-intent', async (req, res) => {
-    await createIntentFromToken(req, res, 'price_1T2GcwIqG0lEuV8tZMT4DAG5', "monthly");
+    await createIntentFromToken(req, res, STRIPE_PRICE_ID_MONTHLY, "monthly");
 });
 
 app.post('/create-payment-intent-yearly', async (req, res) => {
-    await createIntentFromToken(req, res, 'price_1T7LvaIqG0lEuV8tJc91Lx67', "yearly");
+    await createIntentFromToken(req, res, STRIPE_PRICE_ID_YEARLY, "yearly");
 });
 
 app.post("/create-subscription-session", async (req, res) => {
