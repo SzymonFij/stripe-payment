@@ -114,6 +114,7 @@ const handleCheckoutCompleted = async (session, stripe) => {
 }
 
 const handleInvoicePaid = async (invoice) => {
+    console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
     if (!invoice.subscription) {
         return;
     }
