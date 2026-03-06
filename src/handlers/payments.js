@@ -76,42 +76,43 @@ const handleCheckoutCompleted = async (session, stripe) => {
 
     const email = session.customer_details.email || session.customer_email;
     const subscriptionId = session.subscription;
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    // const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-    await pool.query(
-        `INSERT INTO subscriptions (
-            email,
-            stripe_subscription_id,
-            stripe_customer_id,
-            source,
-            status,
-            current_period_start,
-            current_period_end,
-            cancel_at_period_end
-        )
-        VALUES ($1,$2,$3,$4,$5,
-            to_timestamp($6),
-            to_timestamp($7),
-            $8
-        )
-        ON CONFLICT (stripe_subscription_id)
-        DO UPDATE SET
-            status = EXCLUDED.status,
-            current_period_start = EXCLUDED.current_period_start,
-            current_period_end = EXCLUDED.current_period_end,
-            cancel_at_period_end = EXCLUDED.cancel_at_period_end,
-            updated_at = now()`,
-        [
-            email,
-            subscription.id,
-            subscription.customer,
-            'stripe_subscription',
-            subscription.status,
-            subscription.current_period_start,
-            subscription.current_period_end,
-            subscription.cancel_at_period_end,
-        ]
-    );
+    console.log("does it event goes through?", session.id, session.customer, session.status, session.current_period_start, session.current_period_end);
+    // await pool.query(
+    //     `INSERT INTO subscriptions (
+    //         email,
+    //         stripe_subscription_id,
+    //         stripe_customer_id,
+    //         source,
+    //         status,
+    //         current_period_start,
+    //         current_period_end,
+    //         cancel_at_period_end
+    //     )
+    //     VALUES ($1,$2,$3,$4,$5,
+    //         to_timestamp($6),
+    //         to_timestamp($7),
+    //         $8
+    //     )
+    //     ON CONFLICT (stripe_subscription_id)
+    //     DO UPDATE SET
+    //         status = EXCLUDED.status,
+    //         current_period_start = EXCLUDED.current_period_start,
+    //         current_period_end = EXCLUDED.current_period_end,
+    //         cancel_at_period_end = EXCLUDED.cancel_at_period_end,
+    //         updated_at = now()`,
+    //     [
+    //         email,
+    //         subscription.id,
+    //         subscription.customer,
+    //         'stripe_subscription',
+    //         subscription.status,
+    //         subscription.current_period_start,
+    //         subscription.current_period_end,
+    //         subscription.cancel_at_period_end,
+    //     ]
+    // );
 }
 
 const handleInvoicePaid = async (invoice) => {
@@ -155,6 +156,7 @@ const handleInvoicePaid = async (invoice) => {
         ]
     );
 
+    console.log("STRIPE SUBSCRIPTION ID", invoice.id, "for email:", email, "cancel?", invoice.cancel_at_period_end);
     await pool.query(
         `INSERT INTO subscriptions (
             email,
