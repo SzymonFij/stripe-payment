@@ -85,7 +85,7 @@ const handleCheckoutCompleted = async (session, stripe) => {
             current_period_end,
             cancel_at_period_end
         )
-        VALUES ($1,$2,$3,$4,$5
+        VALUES ($1,$2,$3,$4,$5,
             to_timestamp($6),
             to_timestamp($7),
             $8
