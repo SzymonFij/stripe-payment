@@ -51,7 +51,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
             $4,
             $5
         )
-        ON CONFLICT (email)
+        ON CONFLICT (stripe_subscription_id)
         DO UPDATE SET
             current_period_end = GREATEST(subscriptions.current_period_end, NOW()) + INTERVAL '${interval}',
             updated_at = now()`,
