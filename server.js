@@ -24,6 +24,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "supertajnehaslo";
 const SALT_ROUNDS = 10; // Rounds to hash password;
 const STRIPE_PRICE_ID_MONTHLY = process.env.STRIPE_PRODUCT_ID_MONTHLY;
 const STRIPE_PRICE_ID_YEARLY = process.env.STRIPE_PRODUCT_ID_YEARLY;
+const STRIPE_PRICE_ID_SUBSCRIPTION = process.env.STRIPE_PRODUCT_ID_SUBSCRIPTION;
 
 app.use(cors({
   	origin: process.env.FRONTEND_URL
@@ -234,7 +235,7 @@ app.post("/create-subscription-session", async (req, res) => {
 			customer_email: email,
 			line_items: [
 				{
-					price: "price_1T4O29IqG0lEuV8tdc9xMixW",
+					price: STRIPE_PRICE_ID_SUBSCRIPTION,
 					quantity: 1,
 				},
 			],

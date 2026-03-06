@@ -72,7 +72,7 @@ const handleCheckoutCompleted = async (session, stripe) => {
 
     const email = session.customer_details.email;
     const subscriptionId = session.subscription;
-    const subscription = await stripe.subscriptions.retreive(subscriptionId);
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
     await pool.query(
         `INSERT INTO subscriptions (
