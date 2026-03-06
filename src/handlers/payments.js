@@ -66,6 +66,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
 }
 
 const handleCheckoutCompleted = async (session, stripe) => {
+    console.log("handle checkout on SUBSCRIPTION", session.mode, "status", session.payment_status, "OTHER", JSON.stringify(session, null, 2));
     if (session.mode !== "subscription") {
         return;
     }
@@ -114,8 +115,8 @@ const handleCheckoutCompleted = async (session, stripe) => {
 }
 
 const handleInvoicePaid = async (invoice) => {
-    console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
-    console.log("BILLING REASON", invoice.billing_reason);
+    // console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
+    // console.log("BILLING REASON", invoice.billing_reason);
     // console.log("whole billing", JSON.stringify(invoice, null, 2));
     if (!invoice.billing_reason.includes("subscription")) { // "subscription_create" or "subscription_cycle" or "subscription_update"
         return;
@@ -151,6 +152,41 @@ const handleInvoicePaid = async (invoice) => {
             invoice.currency,
             invoice.lines.data[0].period.start,
             invoice.lines.data[0].period.end,
+        ]
+    );
+
+    await pool.query(
+        `INSERT INTO subscriptions (
+            email,
+            stripe_subscription_id,
+            stripe_customer_id,
+            source,
+            status,
+            current_period_start,
+            current_period_end,
+            cancel_at_period_end
+        )
+        VALUES ($1,$2,$3,$4,$5,
+            to_timestamp($6),
+            to_timestamp($7),
+            $8
+        )
+        ON CONFLICT (stripe_subscription_id)
+        DO UPDATE SET
+            status = EXCLUDED.status,
+            current_period_start = EXCLUDED.current_period_start,
+            current_period_end = EXCLUDED.current_period_end,
+            cancel_at_period_end = EXCLUDED.cancel_at_period_end,
+            updated_at = now()`,
+        [
+            email,
+            invoice.id,
+            invoice.customer,
+            'stripe_subscription',
+            invoice.status,
+            invoice.lines.data[0].period.start,
+            invoice.lines.data[0].period.end,
+            invoice.cancel_at_period_end,
         ]
     );
 }
