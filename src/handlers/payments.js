@@ -104,13 +104,13 @@ const handleCheckoutCompleted = async (session, stripe) => {
     //         updated_at = now()`,
     //     [
     //         email,
-    //         subscription.id,
-    //         subscription.customer,
+    //         session.id,
+    //         session.customer,
     //         'stripe_subscription',
-    //         subscription.status,
-    //         subscription.current_period_start,
-    //         subscription.current_period_end,
-    //         subscription.cancel_at_period_end,
+    //         session.status,
+    //         session.current_period_start,
+    //         session.current_period_end,
+    //         session.cancel_at_period_end,
     //     ]
     // );
 }
@@ -156,7 +156,12 @@ const handleInvoicePaid = async (invoice) => {
         ]
     );
 
-    console.log("STRIPE SUBSCRIPTION ID", invoice.id, "for email:", email, "cancel?", invoice.cancel_at_period_end);
+    // if (!invoice.subscription) {
+    //     return;
+    // }
+    // const subscription = await stripe.subscription.retrieve(invoice.subscription);
+
+    console.log("STRIPE SUBSCRIPTION ID", invoice.subscription, "for email:", email, "cancel?", invoice.cancel_at_period_end);
     await pool.query(
         `INSERT INTO subscriptions (
             email,
@@ -182,13 +187,13 @@ const handleInvoicePaid = async (invoice) => {
             updated_at = now()`,
         [
             email,
-            invoice.id,
+            invoice.subscription,
             invoice.customer,
             'stripe_subscription',
             invoice.status,
             invoice.lines.data[0].period.start,
             invoice.lines.data[0].period.end,
-            invoice.cancel_at_period_end,
+            invoice.cancel_at_period_end || false,
         ]
     );
 }
