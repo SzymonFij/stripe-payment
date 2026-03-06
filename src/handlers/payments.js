@@ -115,11 +115,13 @@ const handleCheckoutCompleted = async (session, stripe) => {
 
 const handleInvoicePaid = async (invoice) => {
     console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
+    console.log("BILLING REASON", invoice.billing_reason);
+    console.log("whole billing", JSON.stringify(invoice, null, 2));
     if (!invoice.subscription) {
         return;
     }
     
-    const email = invoice.customer_email;
+    const email = invoice.customer_email || invoice.customer_details?.email;
     await pool.query(
         `INSERT INTO payments (
             email,
