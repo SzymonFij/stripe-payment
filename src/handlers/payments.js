@@ -69,8 +69,11 @@ const handleCheckoutCompleted = async (session, stripe) => {
     if (session.mode !== "subscription") {
         return;
     }
+    if (session.payment_status !== "paid") {
+        return;
+    }
 
-    const email = session.customer_details.email;
+    const email = session.customer_details.email || session.customer_email;
     const subscriptionId = session.subscription;
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 

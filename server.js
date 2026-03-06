@@ -138,7 +138,7 @@ app.get("/init-db", async (req, res) => {
 		CREATE TABLE IF NOT EXISTS subscriptions (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			
-			email TEXT UNIQUE NOT NULL,
+			email TEXT NOT NULL,
 
 			stripe_subscription_id TEXT UNIQUE NOT NULL,
 			stripe_customer_id TEXT NOT NULL,
@@ -153,7 +153,10 @@ app.get("/init-db", async (req, res) => {
 
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-		)`)
+		);
+			
+		CREATE INDEX idx_subscriptions_email ON subscriptions(email);
+		`)
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
