@@ -116,8 +116,8 @@ const handleCheckoutCompleted = async (session, stripe) => {
 const handleInvoicePaid = async (invoice) => {
     console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
     console.log("BILLING REASON", invoice.billing_reason);
-    console.log("whole billing", JSON.stringify(invoice, null, 2));
-    if (!invoice.subscription) {
+    // console.log("whole billing", JSON.stringify(invoice, null, 2));
+    if (!invoice.billing_reason.includes("subscription")) { // "subscription_create" or "subscription_cycle" or "subscription_update"
         return;
     }
     
