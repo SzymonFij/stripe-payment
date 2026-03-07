@@ -163,7 +163,7 @@ const handleInvoicePaid = async (invoice) => {
     // const subscription = await stripe.subscription.retrieve(invoice.subscription);
 
     // TODO: invoice.subscription is undefined, check why
-    console.log("STRIPE SUBSCRIPTION ID", invoice.subscription, "for email:", email, "cancel?", invoice.cancel_at_period_end, "session invoice", invoice.id, "REASON", invoince.billing_reason);
+    console.log("STRIPE SUBSCRIPTION ID", invoice.subscription, "for email:", email, "session invoice", invoice.id, "REASON", invoice.billing_reason);
     await pool.query(
         `INSERT INTO subscriptions (
             email,
