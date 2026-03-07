@@ -120,11 +120,11 @@ const handleInvoicePaid = async (invoice) => {
     // console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
     // console.log("BILLING REASON", invoice.billing_reason);
     console.log("whole billing", JSON.stringify(invoice, null, 2));
-    if (!invoice.subscription_item_details.subscription) { // "subscription_create" or "subscription_cycle" or "subscription_update"
+    if (!invoice.lines.data[0]?.parent?.subscription_item_details?.subscription) { // "subscription_create" or "subscription_cycle" or "subscription_update"
         console.log("INVOICE HAS NO SUBSCRIPTION:", invoice.id);
         return;
     }
-    console.log("ITEM DETAILS", invoice.subscription_item_details.subscription, "OR", invoice.lines.data[0]?.subscription_details?.subscription);
+    console.log("ITEM DETAILS", invoice.lines.data[0]?.parent?.subscription_item_details?.subscription);
     
     const email = invoice.customer_email || invoice.customer_details?.email;
     await pool.query(
