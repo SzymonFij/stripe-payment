@@ -209,10 +209,11 @@ async function createIntentFromToken(req, res, priceId, paymentType) {
             metadata: { email, paymentType },
         });
 
-        await pool.query(
-            `UPDATE payment_links SET used=TRUE WHERE id=$1`,
-            [linkData.id]
-        );
+		// TODO: Check if only single usage of link should be activated
+        // await pool.query(
+        //     `UPDATE payment_links SET used=TRUE WHERE id=$1`,
+        //     [linkData.id]
+        // );
 
         res.send({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
