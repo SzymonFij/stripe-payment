@@ -215,7 +215,7 @@ async function createIntentFromToken(req, res, priceId, paymentType) {
         //     [linkData.id]
         // );
 
-        res.send({ clientSecret: paymentIntent.client_secret });
+        res.send({ clientSecret: paymentIntent.client_secret, price: price.unit_amount, currency: price.currency, email: email });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
