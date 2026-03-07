@@ -119,8 +119,9 @@ const handleCheckoutCompleted = async (session, stripe) => {
 const handleInvoicePaid = async (invoice) => {
     // console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
     // console.log("BILLING REASON", invoice.billing_reason);
-    // console.log("whole billing", JSON.stringify(invoice, null, 2));
-    if (!invoice.billing_reason.includes("subscription")) { // "subscription_create" or "subscription_cycle" or "subscription_update"
+    console.log("whole billing", JSON.stringify(invoice, null, 2));
+    if (!invoice.subscription.includes("subscription")) { // "subscription_create" or "subscription_cycle" or "subscription_update"
+        console.log("INVOICE HAS NO SUBSCRIPTION:", invoice.id);
         return;
     }
     
@@ -164,6 +165,7 @@ const handleInvoicePaid = async (invoice) => {
 
     // TODO: invoice.subscription is undefined, check why
     console.log("STRIPE SUBSCRIPTION ID", invoice.subscription, "for email:", email, "session invoice", invoice.id, "REASON", invoice.billing_reason);
+    // console.log("INVOINCE CHECK ALL THE REST OF DATA", JSON.stringify( invoice, null, 2));
     await pool.query(
         `INSERT INTO subscriptions (
             email,
