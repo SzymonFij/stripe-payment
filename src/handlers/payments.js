@@ -66,7 +66,7 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
 }
 
 const handleCheckoutCompleted = async (session, stripe) => {
-    console.log("handle checkout on SUBSCRIPTION", session.mode, "status", session.payment_status, "OTHER", JSON.stringify(session, null, 2));
+    console.log("handle checkout on SUBSCRIPTION", session.mode, "status", session.payment_status); //"OTHER", JSON.stringify(session, null, 2)
     if (session.mode !== "subscription") {
         return;
     }
@@ -79,6 +79,7 @@ const handleCheckoutCompleted = async (session, stripe) => {
     // const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
     console.log("does it event goes through?", session.id, session.customer, session.status, session.current_period_start, session.current_period_end);
+    console.log("sub data", session.subscription, "MODE", session.mode, "STATUS", session.payment_status, "INV ID", session.invoice, "ID:", session.id)
     // await pool.query(
     //     `INSERT INTO subscriptions (
     //         email,
@@ -161,7 +162,8 @@ const handleInvoicePaid = async (invoice) => {
     // }
     // const subscription = await stripe.subscription.retrieve(invoice.subscription);
 
-    console.log("STRIPE SUBSCRIPTION ID", invoice.subscription, "for email:", email, "cancel?", invoice.cancel_at_period_end);
+    // TODO: invoice.subscription is undefined, check why
+    console.log("STRIPE SUBSCRIPTION ID", invoice.subscription, "for email:", email, "cancel?", invoice.cancel_at_period_end, "session invoice", invoice.id, "REASON", invoince.billing_reason);
     await pool.query(
         `INSERT INTO subscriptions (
             email,
