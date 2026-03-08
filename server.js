@@ -180,6 +180,7 @@ app.get("/init-types", async (res, req) => {
 			CREATE INDEX idx_subscriptions_lookup
 			ON subscriptions (email, current_period_end DESC)
 			WHERE status IN ('active', 'paid')`);
+		res.send("Types declared");
 	} catch (err) {
 		console.error(err);
 		res.status(500).send("Error");
