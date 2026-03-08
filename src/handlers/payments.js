@@ -3,8 +3,6 @@ const pool = require('../../db');
 const handlePaymentIntentSucceeded = async (paymentIntent) => {
     const email = paymentIntent.receipt_email || paymentIntent.metadata.email;
     const paymentType = paymentIntent.metadata.paymentType;
-    console.log("Payment succeeded:", paymentIntent.id);
-    console.log("PAYMENT TO BE PROLONGED BY:", paymentType);
 
     if (!email) {
         return;
@@ -66,65 +64,20 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
 }
 
 const handleCheckoutCompleted = async (session, stripe) => {
-    console.log("handle checkout on SUBSCRIPTION", session.mode, "status", session.payment_status); //"OTHER", JSON.stringify(session, null, 2)
     if (session.mode !== "subscription") {
         return;
     }
     if (session.payment_status !== "paid") {
         return;
     }
-
-    const email = session.customer_details.email || session.customer_email;
-    const subscriptionId = session.subscription;
-    // const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-    console.log("does it event goes through?", session.id, session.customer, session.status, session.current_period_start, session.current_period_end);
-    console.log("sub data", session.subscription, "MODE", session.mode, "STATUS", session.payment_status, "INV ID", session.invoice, "ID:", session.id)
-    // await pool.query(
-    //     `INSERT INTO subscriptions (
-    //         email,
-    //         stripe_subscription_id,
-    //         stripe_customer_id,
-    //         source,
-    //         status,
-    //         current_period_start,
-    //         current_period_end,
-    //         cancel_at_period_end
-    //     )
-    //     VALUES ($1,$2,$3,$4,$5,
-    //         to_timestamp($6),
-    //         to_timestamp($7),
-    //         $8
-    //     )
-    //     ON CONFLICT (stripe_subscription_id)
-    //     DO UPDATE SET
-    //         status = EXCLUDED.status,
-    //         current_period_start = EXCLUDED.current_period_start,
-    //         current_period_end = EXCLUDED.current_period_end,
-    //         cancel_at_period_end = EXCLUDED.cancel_at_period_end,
-    //         updated_at = now()`,
-    //     [
-    //         email,
-    //         session.id,
-    //         session.customer,
-    //         'stripe_subscription',
-    //         session.status,
-    //         session.current_period_start,
-    //         session.current_period_end,
-    //         session.cancel_at_period_end,
-    //     ]
-    // );
+    
+    // For now checkout does not do anything. All subscription payment and updates are handled in other places.
 }
 
 const handleInvoicePaid = async (invoice) => {
-    // console.log("HANDLE INVOICE PAID", invoice.id, "subscription:", invoice.subscription, "customer email:", invoice.customer_email);
-    // console.log("BILLING REASON", invoice.billing_reason);
-    // console.log("whole billing", JSON.stringify(invoice, null, 2));
-    if (!invoice.lines.data[0]?.parent?.subscription_item_details?.subscription) { // "subscription_create" or "subscription_cycle" or "subscription_update"
-        console.log("INVOICE HAS NO SUBSCRIPTION:", invoice.id);
+    if (!invoice.lines.data[0]?.parent?.subscription_item_details?.subscription) {
         return;
     }
-    console.log("ITEM DETAILS", invoice.lines.data[0]?.parent?.subscription_item_details?.subscription);
     
     const email = invoice.customer_email || invoice.customer_details?.email;
     await pool.query(
@@ -159,14 +112,6 @@ const handleInvoicePaid = async (invoice) => {
         ]
     );
 
-    // if (!invoice.subscription) {
-    //     return;
-    // }
-    // const subscription = await stripe.subscription.retrieve(invoice.subscription);
-
-    // TODO: invoice.subscription is undefined, check why
-    console.log("STRIPE SUBSCRIPTION ID", "for email:", email, "session invoice", invoice.id, "REASON", invoice.billing_reason);
-    // console.log("INVOINCE CHECK ALL THE REST OF DATA", JSON.stringify( invoice, null, 2));
     await pool.query(
         `INSERT INTO subscriptions (
             email,
@@ -204,7 +149,6 @@ const handleInvoicePaid = async (invoice) => {
 }
 
 const handleSubscriptionUpdated = async (subscription) => {
-    // console.log("SUBSCRIPTIN UPDATE", JSON.stringify(subscription, null, 2));
     const currentPeriodStart = subscription.current_period_start || subscription.items?.data?.[0]?.current_period_start;
     const currentPeriodEnd = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end;
     await pool.query(

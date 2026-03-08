@@ -90,26 +90,6 @@ app.get("/init-db", async (req, res) => {
 	await pool.query('DROP TABLE IF EXISTS users CASCADE');
 	await pool.query('DROP TABLE IF EXISTS payment_links');
 	await pool.query('DROP TABLE IF EXISTS subscriptions CASCADE');
-    // await pool.query(`
-	// 	CREATE TABLE IF NOT EXISTS users (
-	// 		id SERIAL PRIMARY KEY,
-	// 		email VARCHAR(255) UNIQUE NOT NULL,
-	// 		password_hash VARCHAR(255) NOT NULL,
-	// 		role VARCHAR(50) DEFAULT 'client',
-	// 		payment_status VARCHAR(50),
-	// 		created_at TIMESTAMP DEFAULT NOW()
-	// 	);
-    // `);
-	// Commented code should be run only once
-	// CREATE TYPE payment_type AS ENUM ('one_time', 'subscription');
-	// 	CREATE TYPE payment_status AS ENUM (
-	// 		'pending',
-	// 		'succeeded',
-	// 		'failed',
-	// 		'canceled',
-	// 		'refunded'
-	// 	);
-	// CREATE TYPE subscription_source AS ENUM ('srtipe_subscription', 'one_time');
     await pool.query(`
 		CREATE TABLE IF NOT EXISTS payments (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -156,7 +136,6 @@ app.get("/init-db", async (req, res) => {
 		);
 			
 		`)
-		// CREATE INDEX idx_subscriptions_email ON subscriptions(email);
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
@@ -179,10 +158,25 @@ app.get("/init-types", async (req, res) => {
 		await pool.query(`
 			DROP INDEX IF EXISTS idx_subscriptions_lookup;
 
-
 			CREATE INDEX idx_subscriptions_lookup
 			ON subscriptions (email, current_period_end DESC)
-			WHERE status IN ('active', 'paid');`);
+			WHERE status IN ('active', 'paid');
+
+			DROP TYPE IF EXISTS payment_type;
+			CREATE TYPE payment_type AS ENUM ('one_time', 'subscription');
+
+			DROP TYPE IF EXISTS payment_status;
+			CREATE TYPE payment_status AS ENUM (
+				'pending',
+				'succeeded',
+				'failed',
+				'canceled',
+				'refunded'
+			);
+			
+			DROP TYPE IF EXISTS subscription_source;
+			CREATE TYPE subscription_source AS ENUM ('srtipe_subscription', 'one_time');
+			`);
 		res.send("Types declared");
 	} catch (err) {
 		console.error(err);
