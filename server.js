@@ -174,12 +174,12 @@ app.get("/init-db", async (req, res) => {
   }
 });
 
-app.get("/init-types", async (res, req) => {
+app.get("/init-types", async (req, res) => {
 	try {
 		await pool.query(`
 			CREATE INDEX idx_subscriptions_lookup
 			ON subscriptions (email, current_period_end DESC)
-			WHERE status IN ('active', 'paid')`);
+			WHERE status IN ('active', 'paid');`);
 		res.send("Types declared");
 	} catch (err) {
 		console.error(err);
