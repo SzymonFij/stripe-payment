@@ -204,6 +204,7 @@ const handleInvoicePaid = async (invoice) => {
 }
 
 const handleSubscriptionUpdated = async (subscription) => {
+    console.log("SUBSCRIPTIN UPDATE", JSON.stringify(subscription, null, 2));
     await pool.query(
         `UPDATE subscriptions
             SET status = $1,
