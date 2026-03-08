@@ -155,8 +155,8 @@ app.get("/init-db", async (req, res) => {
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 		);
 			
-		CREATE INDEX idx_subscriptions_email ON subscriptions(email);
 		`)
+		// CREATE INDEX idx_subscriptions_email ON subscriptions(email);
 	await pool.query(`
 		CREATE TABLE payment_links (
 			id SERIAL PRIMARY KEY,
@@ -173,6 +173,18 @@ app.get("/init-db", async (req, res) => {
     res.status(500).send("Error");
   }
 });
+
+app.get("/init-types", async (res, req) => {
+	try {
+		await pool.query(`
+			CREATE INDEX idx_subscriptions_lookup
+			ON subscriptions (email, current_period_end DESC)
+			WHERE status IN ('active', 'paid')`);
+	} catch (err) {
+		console.error(err);
+		res.status(500).send("Error");
+	}
+})
 
 app.use(express.json());
 

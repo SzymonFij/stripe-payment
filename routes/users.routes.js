@@ -50,8 +50,10 @@ router.get("/subscription", async (req, res) => {
         `SELECT *
         FROM subscriptions
         WHERE email = $1
-        AND status = 'active'
-        AND current_period_end > now()`,
+        AND status IN ('active', 'paid')
+        AND current_period_end > now()
+        ORDER BY current_period_end DESC
+        LIMIT 1`,
         [email]
     );
 
@@ -69,6 +71,7 @@ router.get("/subscription", async (req, res) => {
             current_period_start: subscription.current_period_start,
             current_period_end: subscription.current_period_end,
             cancel_at_period_end: subscription.cancel_at_period_end,
+            subscription_status: subscription.status
         }
      });
 })
