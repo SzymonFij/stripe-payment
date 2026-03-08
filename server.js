@@ -177,6 +177,9 @@ app.get("/init-db", async (req, res) => {
 app.get("/init-types", async (req, res) => {
 	try {
 		await pool.query(`
+			DROP INDEX IF EXISTS idx_subscriptions_lookup;
+
+
 			CREATE INDEX idx_subscriptions_lookup
 			ON subscriptions (email, current_period_end DESC)
 			WHERE status IN ('active', 'paid');`);
