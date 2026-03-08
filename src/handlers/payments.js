@@ -204,7 +204,9 @@ const handleInvoicePaid = async (invoice) => {
 }
 
 const handleSubscriptionUpdated = async (subscription) => {
-    console.log("SUBSCRIPTIN UPDATE", JSON.stringify(subscription, null, 2));
+    // console.log("SUBSCRIPTIN UPDATE", JSON.stringify(subscription, null, 2));
+    const currentPeriodStart = subscription.current_period_start || subscription.items?.data?.[0]?.current_period_start;
+    const currentPeriodEnd = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end;
     await pool.query(
         `UPDATE subscriptions
             SET status = $1,
@@ -215,8 +217,8 @@ const handleSubscriptionUpdated = async (subscription) => {
         WHERE stripe_subscription_id = $5`,
         [
             subscription.status,
-            subscription.current_period_start,
-            subscription.current_period_end,
+            currentPeriodStart,
+            currentPeriodEnd,
             subscription.cancel_at_period_end,
             subscription.id
         ]
