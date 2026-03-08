@@ -74,6 +74,40 @@ router.get("/subscription", async (req, res) => {
             subscription_status: subscription.status
         }
      });
-})
+});
+
+router.post("/subscriptions", async (req, res) => {
+    const { emails } = req.body;
+
+    if (!emails || !emails.length) {
+        return res.status(400).json({ error: "Lista emaili jest wymagana" });
+    }
+
+    const result = await pool.query(
+        `SELECT DISTINCT ON (email) *
+        FROM subscriptions
+        WHERE email = ANY($1)
+        AND status IN ('active','paid')
+        AND current_period_end > now()
+        ORDER BY email, current_period_end DESC`,
+        [emails]
+    );
+
+    const subscriptions = {};
+
+    for (const row of result.rows) {
+        subscriptions[row.email] = {
+            stripe_subscription_id: row.stripe_subscription_id,
+            stripe_customer_id: row.stripe_customer_id,
+            source: row.source,
+            current_period_start: row.current_period_start,
+            current_period_end: row.current_period_end,
+            cancel_at_period_end: row.cancel_at_period_end,
+            subscription_status: row.status
+        };
+    }
+
+    res.json({ subscriptions });
+});
 
 module.exports = router;
