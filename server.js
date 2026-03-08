@@ -308,7 +308,7 @@ app.post("/create-portal-session", async (req, res) => {
 
 	const portalSession = await stripe.billingPortal.sessions.create({
 		customer: subscription.rows[0].stripe_customer_id,
-		return_url: process.env.FRONTEND_URL,
+		return_url: `${process.env.FRONTEND_URL}/panel`,
 	});
 	res.json({ url: portalSession.url });
 });
